@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>TicTacToe Multiplayer</title>
+    <style>
+      body{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+      }
+
+      #start{
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        row-gap: .25rem;
+        width: 60%;
+      }
+
+      #start input, #start div{
+        width: 40%;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      #start div button{
+        width: 49%;
+      }
+
+      #field{
+        width: 16rem;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(3, 1fr);
+        aspect-ratio: 1;
+        background-color: darkgray;
+      }
+
+      #field button {
+        width: 5rem;
+        aspect-ratio: 1;
+        background-color: white;
+        border: none;
+        font-size: 4rem;
+      }
+
+      .button-bottom-margin{
+        margin-bottom: .25rem;
+      }
+
+      .button-top-margin{
+        margin-top: .25rem;
+      }
+
+      .button-left-margin{
+        margin-left: .25rem;
+      }
+      
+      .button-right-margin{
+        margin-right: .25rem;
+      }
+
+      #field button.light:hover {
+        background-color: lightgray;
+      }
+
+      #field button.light {
+        background-color: white;
+      }
+
+      #field button.dark:hover {
+        background-color: #30284a;
+      }
+
+      #field button.dark{
+        background-color: #100128;
+      }
+
+      .hidden{
+        display: none !important;
+      }
+
+      .not-editable.dark:hover {
+        background-color: #100128 !important;
+      }
+
+      .not-editable.light:hover {
+        background-color: white !important;
+      }
+
+      .switch {
+        position: absolute;
+        right: 2rem;
+        bottom: 2rem;
+        display: inline-block;
+        width: 60px;
+        height: 34px;
+      }
+
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc !important;
+        -webkit-transition: .4s;
+        transition: .4s;
+        border-radius: 34px;
+      }
+
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        -webkit-transition: .4s;
+        transition: .4s;
+        border-radius: 50%;
+      }
+
+      input:checked + .slider {
+        background-color: #949494;
+      }
+
+      input:focus + .slider {
+        box-shadow: 0 0 1px #949494;
+      }
+
+      input:checked + .slider:before {
+        -webkit-transform: translateX(26px);
+        -ms-transform: translateX(26px);
+        transform: translateX(26px);
+      }
+
+      .dark *, .dark{
+        background-color: #100128;
+        color: #adadad;
+      }
+    </style>
+  </head>
+  <body class="">
+    <h1>TicTacToe Multiplayer</h1>
+    <div id="start" class="">
+      <input type="text" name="name" id="player-name" value="Player">
+      <input id="room-name" autocomplete="off" placeholder="Room">
+      <div id="room-buttons">
+        <button id="room-button-join">Join Room</button>
+        <button id="room-button-create">Create Room</button>
+      </div>
+    </div>
+    <div id="game" class="hidden">
+      <div id="field">
+        <button class="tic-tac-toe-button button-bottom-margin button-right-margin light"></button>
+        <button class="tic-tac-toe-button button-left-margin button-right-margin button-bottom-margin light"></button>
+        <button class="tic-tac-toe-button button-left-margin button-bottom-margin light"></button>
+        <button class="tic-tac-toe-button button-top-margin button-right-margin button-bottom-margin light"></button>
+        <button class="tic-tac-toe-button button-top-margin button-right-margin button-left-margin button-bottom-margin light"></button>
+        <button class="tic-tac-toe-button button-top-margin button-left-margin button-bottom-margin light"></button>
+        <button class="tic-tac-toe-button button-top-margin button-right-margin light"></button>
+        <button class="tic-tac-toe-button button-left-margin button-right-margin button-top-margin light"></button>
+        <button class="tic-tac-toe-button button-left-margin button-top-margin light"></button>
+      </div>
+    </div>
+    <label class="switch">
+      <input type="checkbox" id="switch-input">
+      <span class="slider"></span>
+    </label>
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- socket.io -->
+    <script>
+      let socket = io();
+      
+      // Join a Room
+      const roomName = document.getElementById('room-name')
+      const playerName = document.getElementById('player-name')
+      const createRoom = document.getElementById('room-button-create')
+      const joinRoom = document.getElementById('room-button-join')
+      const start = document.getElementById('start')
+      const game = document.getElementById('game')
+
+      joinRoom.addEventListener('click', () => {
+        socket.emit('join-room', roomName.value)
+      })
+
+      createRoom.addEventListener('click', () => {
+        socket.emit('join-room', roomName.value)
+      })
+
+      socket.on('room-full', (room, rooms) => {
+        alert('Room ' + room + ' is full')
+      })
+
+      socket.on('joined-room', (room) => {
+        alert('joined Room ' + room)
+        start.classList.toggle('hidden')
+        game.classList.toggle('hidden')
+      })
+
+      //Tic Tac Toe Field logic
+      let tictactoeButtons = document.getElementsByClassName('tic-tac-toe-button')
+      let tictactoeButtonsValues = []
+      for (let i = 0; i < 9; i++) {
+        tictactoeButtonsValues[i] = null;
+      }
+      let fullField = false
+
+      for (let i = 0; i < 9; i++) {
+        tictactoeButtons[i].addEventListener('click', () => {
+          socket.emit('played', tictactoeButtonsValues, i, socket.id, roomName.value)
+          tictactoeButtonsValues[i] = socket.id;
+          playerPlayed(tictactoeButtonsValues, socket.id)
+        })
+      }
+
+      socket.on('played', (tttButtonsValues, id) => {
+        playerPlayed(tttButtonsValues, id)
+      })
+
+      const playerPlayed = (tttButtonsValues, id) => {
+        tictactoeButtonsValues = tttButtonsValues;
+        
+        
+        // disable and enable the buttons depending if you are playing or the opponent
+        if (id === socket.id) {
+          for (let i = 0; i < tictactoeButtonsValues.length; i++) {
+            tictactoeButtons[i].disabled = true
+            tictactoeButtons[i].classList.add('not-editable')
+          }
+        } else {
+          for (let i = 0; i < tictactoeButtonsValues.length; i++) {
+            tictactoeButtons[i].disabled = false
+            tictactoeButtons[i].classList.remove('not-editable')
+          }
+        }
+
+
+        for (let i = 0; i < tictactoeButtonsValues.length; i++) {
+          let element = tictactoeButtonsValues[i];
+
+          //Color the Fields
+          if (element === socket.id) {
+            tictactoeButtons[i].innerHTML = 'X'
+            tictactoeButtons[i].classList.add('not-editable') 
+            tictactoeButtons[i].disabled = true
+          } else if (element !== null){
+            tictactoeButtons[i].classList.add('not-editable') 
+            tictactoeButtons[i].innerHTML = 'O'
+            tictactoeButtons[i].disabled = true
+          }
+        }
+
+        
+        // Test if the Field is full
+        if (tictactoeButtonsValues[0] !== null && tictactoeButtonsValues[1] !== null && tictactoeButtonsValues[2] !== null && tictactoeButtonsValues[3] !== null && tictactoeButtonsValues[4] !== null && tictactoeButtonsValues[5] !== null && tictactoeButtonsValues[6] !== null && tictactoeButtonsValues[7] !== null && tictactoeButtonsValues[8] !== null) {
+          fullField = true
+        }
+
+        // test if there is a winner
+        let won = winner(tictactoeButtonsValues)
+        if (won) {
+          let opponentID = null
+          for (let i = 0; i < tictactoeButtonsValues.length; i++) {
+            if (tictactoeButtonsValues[i] !== id && tictactoeButtonsValues[i] !== null) {
+              opponentID = tictactoeButtonsValues[i];
+            }
+          }
+          console.log(opponentID);
+          socket.emit('lost', opponentID)
+          alert('You Won')
+          fullField = false
+          clearField()
+        }
+
+        // When it's a draw, alert and clear the field
+        if (fullField === true){
+          socket.emit('draw', roomName.value)
+        }
+
+        console.log(tictactoeButtonsValues);
+      }
+
+      // Alerts the looser
+      socket.on('lost', () => {
+        alert('You lost')
+        clearField()
+      })
+
+      //Alert if it's a draw
+      socket.on('draw', () => {
+        alert("It's a draw")
+        clearField()
+      })
+
+      //clears/resets the field
+      const clearField = () => {
+        for (let i = 0; i < tictactoeButtons.length; i++) {
+          tictactoeButtons[i].style.background = null
+          tictactoeButtons[i].innerHTML = ''
+          tictactoeButtons[i].disabled = false
+          tictactoeButtonsValues[i] = null
+          fullField = false
+        }
+      }
+
+
+      // Tests if there is a winner
+      const winner = (field) => {
+        for (let i = 0; i < 3; i++) {
+          let j = i * 3
+          if (field[j] === socket.id && field[j+1] === socket.id && field[j+2] === socket.id) {
+            return true;
+          }
+          if (field[i + 0] === socket.id && field[i + 3] === socket.id && field[i + 6] === socket.id) {
+            return true;
+          }
+        }
+        if (field[0] === socket.id && field[4] === socket.id && field[8] === socket.id) {
+          return true;
+        }
+        if (field[2] === socket.id && field[4] === socket.id && field[6] === socket.id) {
+          return true;
+        }
+        return false;
+      }
+    </script>
+    <!-- light/darkmode switch -->
+    <script>
+      const switchInput = document.getElementById('switch-input')
+      const body = document.getElementsByTagName('body')[0]
+
+      switchInput.addEventListener('change', function() {
+        body.classList.toggle('dark')
+        for (let i = 0; i < tictactoeButtons.length; i++) {
+          tictactoeButtons[i].classList.toggle('dark')
+          tictactoeButtons[i].classList.toggle('light')
+          
+        }
+      })
+    </script>
+  </body>
+</html>
+
+<!-- 
+tictactoe
+wordle
+yatzi
+vier gewinnt
+uno
+snake
+pacman
+Tetris
+Schach
+Sudoku
+Stadt Land Fluss
+Pong
+Flappy Bird
+ -->
